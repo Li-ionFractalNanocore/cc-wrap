@@ -1,0 +1,40 @@
+{
+  "output_dir": "~/.local/bin",
+  "defaults": {
+    "disable_nonessential_traffic": true
+  },
+  "providers": [
+    {
+      "script_name": "glm-code",
+      "description": "Use Claude Code with GLM API",
+      "required_env": {
+        "var": "GLM_API_KEY"
+      },
+      "env": {
+        "ANTHROPIC_BASE_URL": "https://open.bigmodel.cn/api/anthropic",
+        "ANTHROPIC_AUTH_TOKEN": "$GLM_API_KEY"
+      },
+      "models": "glm-5",
+      "config_dir": "~/.config/claude-glm"
+    },
+    {
+      "script_name": "or-code",
+      "description": "Use Claude Code with OpenRouter API",
+      "required_env": {
+        "var": "OPENROUTER_API_KEY"
+      },
+      "env": {
+        "ANTHROPIC_BASE_URL": "https://openrouter.ai/api/v1",
+        "ANTHROPIC_AUTH_TOKEN": "$OPENROUTER_API_KEY"
+      },
+      "models": {
+        "default": "anthropic/claude-sonnet-4.6",
+        "reasoning": "anthropic/claude-sonnet-4.6",
+        "opus": "anthropic/claude-opus-4.6",
+        "sonnet": "anthropic/claude-sonnet-4.6",
+        "haiku": "anthropic/claude-haiku-4.5"
+      },
+      "config_dir": ""
+    }
+  ]
+}

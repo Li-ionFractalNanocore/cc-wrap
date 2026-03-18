@@ -1,0 +1,139 @@
+#!/bin/bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/lib/cc-wrap-common.sh"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/lib/cc-wrap-render.sh"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  cc-wrap deploy [--config <path>]
+  cc-wrap list [--config <path>]
+  cc-wrap --help
+
+Commands:
+  deploy    Generate wrapper scripts for all configured providers
+  list      List configured providers
+
+Options:
+  --config <path>  Path to config file (default: ./cc-wrap.json)
+  -h, --help       Show this help message
+EOF
+}
+
+parse_args() {
+  CONFIG_PATH="./cc-wrap.json"
+  COMMAND=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      deploy|list)
+        [[ -z "$COMMAND" ]] || die "Only one command may be specified"
+        COMMAND="$1"
+        shift
+        ;;
+      --config)
+        [[ $# -ge 2 ]] || die "--config requires a path"
+        CONFIG_PATH="$2"
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        die "Unknown argument: $1"
+        ;;
+    esac
+  done
+
+  [[ -n "$COMMAND" ]] || {
+    usage
+    exit 1
+  }
+}
+
+list_providers() {
+  local config_path="$1"
+  local provider_json script_name description
+
+  while IFS= read -r provider_json; do
+    script_name="$(jq -r '.script_name' <<<"$provider_json")"
+    description="$(jq -r '.description // empty' <<<"$provider_json")"
+
+    if [[ -n "$description" ]]; then
+      printf '%s - %s\n' "$script_name" "$description"
+    else
+      printf '%s\n' "$script_name"
+    fi
+  done < <(stream_providers "$config_path")
+}
+
+write_provider_script() {
+  local output_dir="$1"
+  local provider_json="$2"
+  local disable_nonessential_traffic="$3"
+  local script_name target_path temp_path
+
+  script_name="$(jq -r '.script_name' <<<"$provider_json")"
+  target_path="$output_dir/$script_name"
+  temp_path="$(mktemp "${target_path}.XXXXXX")"
+
+  render_wrapper_script "$provider_json" "$disable_nonessential_traffic" >"$temp_path"
+  chmod 755 "$temp_path"
+  mv "$temp_path" "$target_path"
+}
+
+deploy_providers() {
+  local config_path="$1"
+  local output_dir disable_nonessential_traffic provider_json provider_index
+
+  output_dir="$(jq -r '.output_dir // "./target"' "$config_path")"
+  output_dir="$(expand_home_path "$output_dir")"
+  mkdir -p "$output_dir"
+
+  disable_nonessential_traffic="false"
+  if config_has_value '.defaults.disable_nonessential_traffic' "$config_path"; then
+    disable_nonessential_traffic="$(jq -r '.defaults.disable_nonessential_traffic' "$config_path")"
+    [[ "$disable_nonessential_traffic" == "true" || "$disable_nonessential_traffic" == "false" ]] || die "defaults.disable_nonessential_traffic must be a boolean"
+  fi
+
+  provider_index=0
+  while IFS= read -r provider_json; do
+    provider_index=$((provider_index + 1))
+    validate_provider_json "$provider_json" "$provider_index"
+    write_provider_script "$output_dir" "$provider_json" "$disable_nonessential_traffic"
+  done < <(stream_providers "$config_path")
+
+  printf 'Generated %d wrapper script(s) in %s\n' "$provider_index" "$output_dir"
+}
+
+main() {
+  ensure_command jq
+  parse_args "$@"
+
+  CONFIG_PATH="$(expand_home_path "$CONFIG_PATH")"
+  validate_config_file "$CONFIG_PATH"
+
+  case "$COMMAND" in
+    deploy)
+      deploy_providers "$CONFIG_PATH"
+      ;;
+    list)
+      local provider_json provider_index
+      provider_index=0
+      while IFS= read -r provider_json; do
+        provider_index=$((provider_index + 1))
+        validate_provider_json "$provider_json" "$provider_index"
+      done < <(stream_providers "$CONFIG_PATH")
+      list_providers "$CONFIG_PATH"
+      ;;
+  esac
+}
+
+main "$@"
