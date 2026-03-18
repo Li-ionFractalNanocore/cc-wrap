@@ -44,6 +44,20 @@ path_for_generated_script() {
   esac
 }
 
+generated_script_signature_line() {
+  printf '# %s\n' "$CC_WRAP_GENERATED_SCRIPT_SIGNATURE"
+}
+
+file_is_cc_wrap_managed() {
+  local file_path="$1"
+  local signature_line
+
+  [[ -f "$file_path" ]] || return 1
+
+  signature_line="$(generated_script_signature_line)"
+  grep -Fqx "$signature_line" "$file_path"
+}
+
 quote_literal() {
   local value="$1"
   printf "'%s'" "${value//\'/\'\\\'\'}"

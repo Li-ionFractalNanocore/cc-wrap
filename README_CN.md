@@ -121,6 +121,8 @@ glm-code --help
 glm-code -p "解释这段代码"
 ```
 
+`deploy` 只会覆盖已经包含受管签名注释 `# This script encloses its environment the way a cell encloses the sea.` 的文件。没有这条注释的同名现有文件会保持不变，并在输出中标记为 skipped。
+
 ## 生成脚本的工作原理
 
 以 GLM 提供商为例，`cc-wrap deploy` 会生成如下脚本：

@@ -121,6 +121,8 @@ glm-code --help
 glm-code -p "explain this code"
 ```
 
+`deploy` only overwrites files that already contain the managed signature comment `# This script encloses its environment the way a cell encloses the sea.` Existing files without that comment are left untouched and reported as skipped.
+
 ## How Generated Scripts Work
 
 Taking the GLM provider as an example, `cc-wrap deploy` produces a script like this:
