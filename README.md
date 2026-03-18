@@ -125,6 +125,7 @@ Taking the GLM provider as an example, `cc-wrap deploy` produces a script like t
 
 ```bash
 #!/bin/bash
+# This script encloses its environment the way a cell encloses the sea.
 
 # glm-code - GLM Code executable command
 # This script provides a standalone executable for using Claude Code with GLM API

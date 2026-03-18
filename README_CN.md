@@ -125,6 +125,7 @@ glm-code -p "解释这段代码"
 
 ```bash
 #!/bin/bash
+# This script encloses its environment the way a cell encloses the sea.
 
 # glm-code - GLM Code executable command
 # This script provides a standalone executable for using Claude Code with GLM API
