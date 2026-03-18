@@ -1,4 +1,4 @@
 .claude/settings.local.json
 
 target/
-cc-wrap.json
+cc-wrap.*json
