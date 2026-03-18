@@ -25,3 +25,10 @@ setup() {
   assert_status_is 0
   assert_output_matches_fixture "list/complete-single.txt"
 }
+
+@test "help mentions uninstall" {
+  run "$PROJECT_ROOT/cc-wrap" --help
+
+  assert_status_is 0
+  assert_output_contains "cc-wrap uninstall [--config <path>]"
+}

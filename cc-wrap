@@ -13,11 +13,13 @@ usage() {
   cat <<'EOF'
 Usage:
   cc-wrap deploy [--config <path>]
+  cc-wrap uninstall [--config <path>]
   cc-wrap list [--config <path>]
   cc-wrap --help
 
 Commands:
   deploy    Generate wrapper scripts for all configured providers
+  uninstall Remove managed wrapper scripts for all configured providers
   list      List configured providers
 
 Options:
@@ -32,7 +34,7 @@ parse_args() {
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      deploy|list)
+      deploy|uninstall|list)
         [[ -z "$COMMAND" ]] || die "Only one command may be specified"
         COMMAND="$1"
         shift
@@ -135,6 +137,68 @@ deploy_providers() {
   fi
 }
 
+remove_provider_script() {
+  local output_dir="$1"
+  local provider_json="$2"
+  local script_name target_path
+
+  script_name="$(jq -r '.script_name' <<<"$provider_json")"
+  target_path="$output_dir/$script_name"
+
+  if [[ ! -e "$target_path" ]]; then
+    printf 'Missing file: %s\n' "$target_path"
+    return 2
+  fi
+
+  if ! file_is_cc_wrap_managed "$target_path"; then
+    printf 'Skipped existing unmanaged file: %s\n' "$target_path"
+    return 1
+  fi
+
+  rm -f -- "$target_path"
+}
+
+uninstall_providers() {
+  local config_path="$1"
+  local output_dir provider_json provider_index removed_count skipped_count missing_count remove_status
+
+  output_dir="$(jq -r '.output_dir // "./target"' "$config_path")"
+  output_dir="$(expand_home_path "$output_dir")"
+
+  provider_index=0
+  removed_count=0
+  skipped_count=0
+  missing_count=0
+  while IFS= read -r provider_json; do
+    provider_index=$((provider_index + 1))
+    validate_provider_json "$provider_json" "$provider_index"
+    if remove_provider_script "$output_dir" "$provider_json"; then
+      removed_count=$((removed_count + 1))
+    else
+      remove_status=$?
+      case "$remove_status" in
+        1)
+          skipped_count=$((skipped_count + 1))
+          ;;
+        2)
+          missing_count=$((missing_count + 1))
+          ;;
+        *)
+          return "$remove_status"
+          ;;
+      esac
+    fi
+  done < <(stream_providers "$config_path")
+
+  printf 'Removed %d wrapper script(s) from %s\n' "$removed_count" "$output_dir"
+  if [[ "$skipped_count" -gt 0 ]]; then
+    printf 'Skipped %d existing unmanaged file(s)\n' "$skipped_count"
+  fi
+  if [[ "$missing_count" -gt 0 ]]; then
+    printf 'Missing %d file(s)\n' "$missing_count"
+  fi
+}
+
 main() {
   ensure_command jq
   parse_args "$@"
@@ -145,6 +209,9 @@ main() {
   case "$COMMAND" in
     deploy)
       deploy_providers "$CONFIG_PATH"
+      ;;
+    uninstall)
+      uninstall_providers "$CONFIG_PATH"
       ;;
     list)
       local provider_json provider_index

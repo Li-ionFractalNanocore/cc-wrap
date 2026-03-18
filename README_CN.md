@@ -109,6 +109,12 @@ cc-wrap deploy
 # 从自定义配置文件生成
 cc-wrap deploy --config my-providers.json
 
+# 删除当前配置中各提供商对应的受管包装脚本
+cc-wrap uninstall
+
+# 使用自定义配置文件删除受管脚本
+cc-wrap uninstall --config my-providers.json
+
 # 列出已配置的提供商
 cc-wrap list
 
@@ -122,6 +128,8 @@ glm-code -p "解释这段代码"
 ```
 
 `deploy` 只会覆盖已经包含受管签名注释 `# This script encloses its environment the way a cell encloses the sea.` 的文件。没有这条注释的同名现有文件会保持不变，并在输出中标记为 skipped。
+
+`uninstall` 只会删除当前配置中各提供商对应、且同样包含该受管签名注释的文件。没有这条注释的同名现有文件会保持不变，并在输出中标记为 skipped。目标文件不存在时会报告 missing，但不会导致命令失败。
 
 ## 生成脚本的工作原理
 

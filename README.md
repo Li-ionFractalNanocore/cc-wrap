@@ -109,6 +109,12 @@ cc-wrap deploy
 # Generate from a custom config file
 cc-wrap deploy --config my-providers.json
 
+# Remove managed wrapper scripts for the configured providers
+cc-wrap uninstall
+
+# Remove managed scripts using a custom config file
+cc-wrap uninstall --config my-providers.json
+
 # List configured providers
 cc-wrap list
 
@@ -122,6 +128,8 @@ glm-code -p "explain this code"
 ```
 
 `deploy` only overwrites files that already contain the managed signature comment `# This script encloses its environment the way a cell encloses the sea.` Existing files without that comment are left untouched and reported as skipped.
+
+`uninstall` only removes files for the configured providers when those files already contain the same managed signature comment. Existing files without that comment are left untouched and reported as skipped. Missing files are reported but do not cause the command to fail.
 
 ## How Generated Scripts Work
 
