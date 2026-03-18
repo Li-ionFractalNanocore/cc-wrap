@@ -1,0 +1,1 @@
+Removed 1 wrapper script(s) from __OUTPUT_DIR__
