@@ -58,7 +58,7 @@ chmod +x cc-wrap
         "ANTHROPIC_BASE_URL": "https://open.bigmodel.cn/api/anthropic",
         "ANTHROPIC_AUTH_TOKEN": "$GLM_API_KEY"
       },
-      "models": "glm-5",
+      "models": "glm-5-turbo",
       "config_dir": "~/.config/claude-glm"
     },
     {
