@@ -54,6 +54,19 @@ assert_output_matches_fixture() {
   fi
 }
 
+assert_output_contains() {
+  local expected_fragment="$1"
+
+  if [[ "$output" != *"$expected_fragment"* ]]; then
+    echo "output did not contain expected fragment" >&2
+    echo "--- expected fragment ---" >&2
+    printf '%s\n' "$expected_fragment" >&2
+    echo "--- actual ---" >&2
+    printf '%s\n' "$output" >&2
+    return 1
+  fi
+}
+
 assert_file_matches_fixture() {
   local actual_path="$1"
   local fixture_name="$2"

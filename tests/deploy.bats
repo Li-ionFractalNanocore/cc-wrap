@@ -46,3 +46,29 @@ setup() {
   assert_file_matches_fixture "$OUTPUT_DIR/glm-code" "deploy/complete-multi/glm-code"
   assert_file_matches_fixture "$OUTPUT_DIR/or-code" "deploy/complete-multi/or-code"
 }
+
+@test "deploy rejects env values that use command substitution" {
+  local base_config config
+  base_config="$(prepare_config "complete-single.json")"
+  config="$WORKDIR/unsafe-command-substitution.json"
+
+  jq '.providers[0].env.ANTHROPIC_AUTH_TOKEN = "$(uname -a)"' "$base_config" >"$config"
+
+  run "$PROJECT_ROOT/cc-wrap" deploy --config "$config"
+
+  assert_status_is 1
+  assert_output_contains "Provider 'basic-code' field 'env.ANTHROPIC_AUTH_TOKEN' contains unsupported shell expansion; only \$VAR and \${VAR} are allowed"
+}
+
+@test "deploy rejects env values that use backticks" {
+  local base_config config
+  base_config="$(prepare_config "complete-single.json")"
+  config="$WORKDIR/unsafe-backticks.json"
+
+  jq '.providers[0].env.ANTHROPIC_AUTH_TOKEN = "`uname -a`"' "$base_config" >"$config"
+
+  run "$PROJECT_ROOT/cc-wrap" deploy --config "$config"
+
+  assert_status_is 1
+  assert_output_contains "Provider 'basic-code' field 'env.ANTHROPIC_AUTH_TOKEN' contains unsupported shell syntax: backticks are not allowed"
+}

@@ -69,6 +69,40 @@ quote_export_value() {
   fi
 }
 
+value_uses_only_env_references() {
+  local remainder="$1"
+  local prefix
+
+  while [[ "$remainder" == *'$'* ]]; do
+    prefix="${remainder%%\$*}"
+    remainder="${remainder#"$prefix"}"
+
+    if [[ "$remainder" =~ ^\$\{[A-Za-z_][A-Za-z0-9_]*\}(.*)$ ]]; then
+      remainder="${BASH_REMATCH[1]}"
+    elif [[ "$remainder" =~ ^\$[A-Za-z_][A-Za-z0-9_]*(.*)$ ]]; then
+      remainder="${BASH_REMATCH[1]}"
+    else
+      return 1
+    fi
+  done
+
+  return 0
+}
+
+validate_expandable_value() {
+  local script_name="$1"
+  local field_name="$2"
+  local value="$3"
+
+  if [[ "$value" == *'`'* ]]; then
+    die "Provider '$script_name' field '$field_name' contains unsupported shell syntax: backticks are not allowed"
+  fi
+
+  if [[ "$value" == *'$'* ]] && ! value_uses_only_env_references "$value"; then
+    die "Provider '$script_name' field '$field_name' contains unsupported shell expansion; only \$VAR and \${VAR} are allowed"
+  fi
+}
+
 config_has_value() {
   local filter="$1"
   local file_path="$2"
@@ -109,6 +143,12 @@ validate_provider_json() {
 
   jq -e '.env | type == "object" and length > 0' <<<"$provider_json" >/dev/null || die "Provider '$script_name' must define a non-empty env object"
   jq -e '.env | all(to_entries[]; (.key | test("^[A-Za-z_][A-Za-z0-9_]*$")) and (.value | type == "string"))' <<<"$provider_json" >/dev/null || die "Provider '$script_name' has invalid env entries"
+  while IFS= read -r env_entry; do
+    local env_key env_value
+    env_key="$(jq -r '.key' <<<"$env_entry")"
+    env_value="$(jq -r '.value' <<<"$env_entry")"
+    validate_expandable_value "$script_name" "env.$env_key" "$env_value"
+  done < <(jq -c '.env | to_entries[]' <<<"$provider_json")
 
   if provider_has_value '.required_env' "$provider_json"; then
     required_var="$(jq -r '.required_env.var // empty' <<<"$provider_json")"
@@ -122,6 +162,7 @@ validate_provider_json() {
 
   if provider_has_value '.config_dir' "$provider_json"; then
     jq -e '.config_dir | type == "string"' <<<"$provider_json" >/dev/null || die "Provider '$script_name' has a non-string config_dir"
+    validate_expandable_value "$script_name" "config_dir" "$(jq -r '.config_dir' <<<"$provider_json")"
   fi
 
   if provider_has_value '.models' "$provider_json"; then
@@ -129,10 +170,17 @@ validate_provider_json() {
     case "$models_type" in
       string)
         jq -e '.models | length > 0' <<<"$provider_json" >/dev/null || die "Provider '$script_name' has an empty models string"
+        validate_expandable_value "$script_name" "models" "$(jq -r '.models' <<<"$provider_json")"
         ;;
       object)
         jq -e '.models | length > 0' <<<"$provider_json" >/dev/null || die "Provider '$script_name' has an empty models object"
         jq -e '.models | all(to_entries[]; (.key == "default" or .key == "reasoning" or .key == "opus" or .key == "sonnet" or .key == "haiku") and (.value | type == "string") and (.value | length > 0))' <<<"$provider_json" >/dev/null || die "Provider '$script_name' has invalid models entries"
+        while IFS= read -r model_entry; do
+          local model_key model_value
+          model_key="$(jq -r '.key' <<<"$model_entry")"
+          model_value="$(jq -r '.value' <<<"$model_entry")"
+          validate_expandable_value "$script_name" "models.$model_key" "$model_value"
+        done < <(jq -c '.models | to_entries[]' <<<"$provider_json")
         ;;
       *)
         die "Provider '$script_name' must set models to a string or object"
