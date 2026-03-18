@@ -1,5 +1,7 @@
 #!/bin/bash
 
+readonly CC_WRAP_GENERATED_SCRIPT_SIGNATURE='This script encloses its environment the way a cell encloses the sea.'
+
 die() {
   echo "Error: $*" >&2
   exit 1

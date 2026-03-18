@@ -10,7 +10,8 @@ render_wrapper_script() {
   required_var="$(jq -r '.required_env.var // empty' <<<"$provider_json")"
   config_dir="$(jq -r '.config_dir // empty' <<<"$provider_json")"
 
-  printf '#!/bin/bash\n\n'
+  printf '#!/bin/bash\n'
+  printf '# %s\n\n' "$CC_WRAP_GENERATED_SCRIPT_SIGNATURE"
 
   if [[ -n "$description" ]]; then
     printf '# %s - %s\n' "$script_name" "$description"
