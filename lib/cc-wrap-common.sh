@@ -18,7 +18,7 @@ expand_home_path() {
       printf '%s\n' "$HOME"
       ;;
     "~/"*)
-      printf '%s/%s\n' "$HOME" "${value#~/}"
+      printf '%s/%s\n' "$HOME" "${value:2}"
       ;;
     *)
       printf '%s\n' "$value"
@@ -34,7 +34,7 @@ path_for_generated_script() {
       printf '$HOME\n'
       ;;
     "~/"*)
-      printf '$HOME/%s\n' "${value#~/}"
+      printf '$HOME/%s\n' "${value:2}"
       ;;
     *)
       printf '%s\n' "$value"
