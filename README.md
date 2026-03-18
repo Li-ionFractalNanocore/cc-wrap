@@ -44,7 +44,8 @@ Create a file named `cc-wrap.json` (default) or pass a custom path with `--confi
 {
   "output_dir": "~/.local/bin",
   "defaults": {
-    "disable_nonessential_traffic": true
+    "disable_nonessential_traffic": true,
+    "experimental_agent_teams": true
   },
   "providers": [
     {
@@ -89,6 +90,7 @@ Create a file named `cc-wrap.json` (default) or pass a custom path with `--confi
 |---|---|---|---|
 | `output_dir` | string | No | Directory for generated scripts. Default: `./target` |
 | `defaults.disable_nonessential_traffic` | bool | No | Set `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` in all scripts |
+| `defaults.experimental_agent_teams` | bool | No | Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in all scripts |
 | `providers` | array | Yes | List of provider definitions |
 | `providers[].script_name` | string | Yes | Output script filename |
 | `providers[].description` | string | No | Comment line in the generated script |
@@ -146,6 +148,7 @@ export ANTHROPIC_DEFAULT_OPUS_MODEL='glm-5'
 export ANTHROPIC_DEFAULT_SONNET_MODEL='glm-5'
 export ANTHROPIC_DEFAULT_HAIKU_MODEL='glm-5'
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 # Set GLM-specific config directory
 GLM_CONFIG_DIR="$HOME/.config/claude-glm"
@@ -174,6 +177,7 @@ Key points:
 | `ANTHROPIC_DEFAULT_SONNET_MODEL` | Sonnet-tier model | `models` (string or `models.sonnet`) |
 | `ANTHROPIC_DEFAULT_HAIKU_MODEL` | Haiku-tier model | `models` (string or `models.haiku`) |
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | Disable telemetry/update checks | `defaults.disable_nonessential_traffic` |
+| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | Enable experimental agent teams | `defaults.experimental_agent_teams` |
 | `CLAUDE_CONFIG_DIR` | Config directory for this provider | `config_dir` |
 
 ## Testing

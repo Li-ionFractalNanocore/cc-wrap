@@ -44,7 +44,8 @@ chmod +x cc-wrap
 {
   "output_dir": "~/.local/bin",
   "defaults": {
-    "disable_nonessential_traffic": true
+    "disable_nonessential_traffic": true,
+    "experimental_agent_teams": true
   },
   "providers": [
     {
@@ -89,6 +90,7 @@ chmod +x cc-wrap
 |---|---|---|---|
 | `output_dir` | string | 否 | 生成脚本的输出目录。默认：`./target` |
 | `defaults.disable_nonessential_traffic` | bool | 否 | 在所有脚本中设置 `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` |
+| `defaults.experimental_agent_teams` | bool | 否 | 在所有脚本中设置 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` |
 | `providers` | array | 是 | 提供商定义列表 |
 | `providers[].script_name` | string | 是 | 输出脚本文件名 |
 | `providers[].description` | string | 否 | 生成脚本中的注释行 |
@@ -146,6 +148,7 @@ export ANTHROPIC_DEFAULT_OPUS_MODEL='glm-5'
 export ANTHROPIC_DEFAULT_SONNET_MODEL='glm-5'
 export ANTHROPIC_DEFAULT_HAIKU_MODEL='glm-5'
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 # Set GLM-specific config directory
 GLM_CONFIG_DIR="$HOME/.config/claude-glm"
@@ -174,6 +177,7 @@ exec claude "$@"
 | `ANTHROPIC_DEFAULT_SONNET_MODEL` | Sonnet 级别模型 | `models`（字符串或 `models.sonnet`） |
 | `ANTHROPIC_DEFAULT_HAIKU_MODEL` | Haiku 级别模型 | `models`（字符串或 `models.haiku`） |
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | 禁用遥测/更新检查 | `defaults.disable_nonessential_traffic` |
+| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | 启用实验性 agent teams | `defaults.experimental_agent_teams` |
 | `CLAUDE_CONFIG_DIR` | 该提供商的配置目录 | `config_dir` |
 
 ## 测试

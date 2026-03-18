@@ -3,6 +3,7 @@
 render_wrapper_script() {
   local provider_json="$1"
   local disable_nonessential_traffic="$2"
+  local experimental_agent_teams="$3"
   local script_name description required_var config_dir config_dir_value
 
   script_name="$(jq -r '.script_name' <<<"$provider_json")"
@@ -43,6 +44,10 @@ render_wrapper_script() {
 
   if [[ "$disable_nonessential_traffic" == "true" ]]; then
     printf 'export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1\n'
+  fi
+
+  if [[ "$experimental_agent_teams" == "true" ]]; then
+    printf 'export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1\n'
   fi
 
   if [[ -n "$config_dir" ]]; then

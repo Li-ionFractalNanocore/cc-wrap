@@ -1,7 +1,8 @@
 {
   "output_dir": "./target",
   "defaults": {
-    "disable_nonessential_traffic": true
+    "disable_nonessential_traffic": true,
+    "experimental_agent_teams": true
   },
   "providers": [
     {

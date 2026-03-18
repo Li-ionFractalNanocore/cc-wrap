@@ -78,20 +78,21 @@ write_provider_script() {
   local output_dir="$1"
   local provider_json="$2"
   local disable_nonessential_traffic="$3"
+  local experimental_agent_teams="$4"
   local script_name target_path temp_path
 
   script_name="$(jq -r '.script_name' <<<"$provider_json")"
   target_path="$output_dir/$script_name"
   temp_path="$(mktemp "${target_path}.XXXXXX")"
 
-  render_wrapper_script "$provider_json" "$disable_nonessential_traffic" >"$temp_path"
+  render_wrapper_script "$provider_json" "$disable_nonessential_traffic" "$experimental_agent_teams" >"$temp_path"
   chmod 755 "$temp_path"
   mv "$temp_path" "$target_path"
 }
 
 deploy_providers() {
   local config_path="$1"
-  local output_dir disable_nonessential_traffic provider_json provider_index
+  local output_dir disable_nonessential_traffic experimental_agent_teams provider_json provider_index
 
   output_dir="$(jq -r '.output_dir // "./target"' "$config_path")"
   output_dir="$(expand_home_path "$output_dir")"
@@ -103,11 +104,17 @@ deploy_providers() {
     [[ "$disable_nonessential_traffic" == "true" || "$disable_nonessential_traffic" == "false" ]] || die "defaults.disable_nonessential_traffic must be a boolean"
   fi
 
+  experimental_agent_teams="false"
+  if config_has_value '.defaults.experimental_agent_teams' "$config_path"; then
+    experimental_agent_teams="$(jq -r '.defaults.experimental_agent_teams' "$config_path")"
+    [[ "$experimental_agent_teams" == "true" || "$experimental_agent_teams" == "false" ]] || die "defaults.experimental_agent_teams must be a boolean"
+  fi
+
   provider_index=0
   while IFS= read -r provider_json; do
     provider_index=$((provider_index + 1))
     validate_provider_json "$provider_json" "$provider_index"
-    write_provider_script "$output_dir" "$provider_json" "$disable_nonessential_traffic"
+    write_provider_script "$output_dir" "$provider_json" "$disable_nonessential_traffic" "$experimental_agent_teams"
   done < <(stream_providers "$config_path")
 
   printf 'Generated %d wrapper script(s) in %s\n' "$provider_index" "$output_dir"

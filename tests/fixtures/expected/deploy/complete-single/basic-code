@@ -20,6 +20,7 @@ export ANTHROPIC_DEFAULT_OPUS_MODEL='basic-model'
 export ANTHROPIC_DEFAULT_SONNET_MODEL='basic-model'
 export ANTHROPIC_DEFAULT_HAIKU_MODEL='basic-model'
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 export CLAUDE_CONFIG_DIR="$HOME/.config/claude-basic"
 
 exec claude "$@"

@@ -20,5 +20,6 @@ export ANTHROPIC_DEFAULT_OPUS_MODEL='anthropic/claude-opus-4.6'
 export ANTHROPIC_DEFAULT_SONNET_MODEL='anthropic/claude-sonnet-4.6'
 export ANTHROPIC_DEFAULT_HAIKU_MODEL='anthropic/claude-haiku-4.5'
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 exec claude "$@"
