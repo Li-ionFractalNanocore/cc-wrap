@@ -176,6 +176,20 @@ Key points:
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | Disable telemetry/update checks | `defaults.disable_nonessential_traffic` |
 | `CLAUDE_CONFIG_DIR` | Config directory for this provider | `config_dir` |
 
+## Testing
+
+This repository includes a small end-to-end test suite under `tests/`.
+
+Prerequisite:
+
+- `bats` available on your `PATH`
+
+Run the suite from the repository root:
+
+```bash
+bats tests
+```
+
 ## License
 
 [MIT](LICENSE)

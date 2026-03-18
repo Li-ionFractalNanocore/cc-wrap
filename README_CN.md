@@ -176,6 +176,20 @@ exec claude "$@"
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | 禁用遥测/更新检查 | `defaults.disable_nonessential_traffic` |
 | `CLAUDE_CONFIG_DIR` | 该提供商的配置目录 | `config_dir` |
 
+## 测试
+
+仓库现在包含一组位于 `tests/` 的端到端自动化测试。
+
+前置条件：
+
+- `bats` 已安装且可在 `PATH` 中找到
+
+在仓库根目录执行：
+
+```bash
+bats tests
+```
+
 ## 许可证
 
 [MIT](LICENSE)

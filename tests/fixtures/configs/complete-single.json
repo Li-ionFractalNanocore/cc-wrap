@@ -1,0 +1,21 @@
+{
+  "output_dir": "./target",
+  "defaults": {
+    "disable_nonessential_traffic": true
+  },
+  "providers": [
+    {
+      "script_name": "basic-code",
+      "description": "Use Claude Code with Basic API",
+      "required_env": {
+        "var": "BASIC_API_KEY"
+      },
+      "env": {
+        "ANTHROPIC_BASE_URL": "https://api.example.test/v1",
+        "ANTHROPIC_AUTH_TOKEN": "$BASIC_API_KEY"
+      },
+      "models": "basic-model",
+      "config_dir": "~/.config/claude-basic"
+    }
+  ]
+}
