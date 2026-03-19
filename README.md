@@ -21,11 +21,23 @@ This approach keeps your default Claude Code configuration untouched. No global 
 
 ## Prerequisites
 
+Common:
+
 | Dependency | Minimum version |
 |---|---|
 | `claude` | latest |
-| `jq` | 1.6+ for the Bash entrypoint |
-| `pwsh` | 7+ for the PowerShell entrypoint |
+
+Unix / Bash entrypoint:
+
+| Dependency | Minimum version |
+|---|---|
+| `jq` | 1.6+ |
+
+PowerShell entrypoint:
+
+| Dependency | Minimum version |
+|---|---|
+| `pwsh` | 7+ |
 
 ## Installation
 
