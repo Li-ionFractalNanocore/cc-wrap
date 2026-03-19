@@ -86,8 +86,7 @@ Create a file named `cc-wrap.json` (default) or pass a custom path with `--confi
         "opus": "anthropic/claude-opus-4.6",
         "sonnet": "anthropic/claude-sonnet-4.6",
         "haiku": "anthropic/claude-haiku-4.5"
-      },
-      "config_dir": ""
+      }
     }
   ]
 }

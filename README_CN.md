@@ -86,8 +86,7 @@ pwsh -File ./cc-wrap.ps1 --help
         "opus": "anthropic/claude-opus-4.6",
         "sonnet": "anthropic/claude-sonnet-4.6",
         "haiku": "anthropic/claude-haiku-4.5"
-      },
-      "config_dir": ""
+      }
     }
   ]
 }
