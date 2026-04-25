@@ -572,35 +572,92 @@ function Render-WrapperScript {
     $lines.Add('')
   }
 
-  $lines.Add('# Set provider configuration')
+  $envNames = [System.Collections.Generic.List[string]]::new()
+  foreach ($envEntry in (Get-PropertyValue -Object $Provider -PropertyName 'env').PSObject.Properties) {
+    if (-not $envNames.Contains($envEntry.Name)) {
+      $envNames.Add($envEntry.Name)
+    }
+  }
+  if (Test-HasProperty -Object $Provider -PropertyName 'models') {
+    $models = Get-PropertyValue -Object $Provider -PropertyName 'models'
+    if ($models -is [string]) {
+      foreach ($envName in $script:ModelEnvNameMap.Values) {
+        if (-not $envNames.Contains($envName)) {
+          $envNames.Add($envName)
+        }
+      }
+    }
+    else {
+      foreach ($modelEntry in $models.PSObject.Properties) {
+        $envName = $script:ModelEnvNameMap[$modelEntry.Name]
+        if ($null -ne $envName -and -not $envNames.Contains($envName)) {
+          $envNames.Add($envName)
+        }
+      }
+    }
+  }
+  if ($DisableNonessentialTraffic -and -not $envNames.Contains('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC')) {
+    $envNames.Add('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC')
+  }
+  if ($ExperimentalAgentTeams -and -not $envNames.Contains('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS')) {
+    $envNames.Add('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS')
+  }
+  if (-not [string]::IsNullOrEmpty($configDir) -and -not $envNames.Contains('CLAUDE_CONFIG_DIR')) {
+    $envNames.Add('CLAUDE_CONFIG_DIR')
+  }
+
+  $lines.Add('$ccWrapEnvNames = @(')
+  foreach ($envName in $envNames) {
+    $lines.Add(('  {0}' -f (Convert-ToSingleQuotedLiteral -Value $envName)))
+  }
+  $lines.Add(')')
+  $lines.Add('$ccWrapPreviousEnv = @{}')
+  $lines.Add('foreach ($ccWrapEnvName in $ccWrapEnvNames) {')
+  $lines.Add('  $ccWrapPreviousEnv[$ccWrapEnvName] = [Environment]::GetEnvironmentVariable($ccWrapEnvName, ''Process'')')
+  $lines.Add('}')
+  $lines.Add('$ccWrapExitCode = 0')
+  $lines.Add('')
+  $lines.Add('try {')
+  $lines.Add('  # Set provider configuration')
   foreach ($envEntry in (Get-PropertyValue -Object $Provider -PropertyName 'env').PSObject.Properties) {
     $expression = Convert-ShellValueToPowerShellExpression -Value $envEntry.Value
-    $lines.Add(('$env:{0} = {1}' -f $envEntry.Name, $expression))
+    $lines.Add(('  $env:{0} = {1}' -f $envEntry.Name, $expression))
   }
 
   if (Test-HasProperty -Object $Provider -PropertyName 'models') {
     foreach ($modelLine in @(Render-ModelsBlock -Provider $Provider)) {
-      $lines.Add($modelLine)
+      $lines.Add(('  {0}' -f $modelLine))
     }
   }
 
   if ($DisableNonessentialTraffic) {
-    $lines.Add('$env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = ''1''')
+    $lines.Add('  $env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = ''1''')
   }
   if ($ExperimentalAgentTeams) {
-    $lines.Add('$env:CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = ''1''')
+    $lines.Add('  $env:CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = ''1''')
   }
   if (-not [string]::IsNullOrEmpty($configDir)) {
     $expression = Convert-ShellValueToPowerShellExpression -Value $configDir -TreatLeadingTildeAsHome
-    $lines.Add(('$env:CLAUDE_CONFIG_DIR = {0}' -f $expression))
+    $lines.Add(('  $env:CLAUDE_CONFIG_DIR = {0}' -f $expression))
   }
 
   $lines.Add('')
-  $lines.Add('& claude @args')
-  $lines.Add('if ($LASTEXITCODE -is [int]) {')
-  $lines.Add('  exit $LASTEXITCODE')
+  $lines.Add('  & claude @args')
+  $lines.Add('  if ($LASTEXITCODE -is [int]) {')
+  $lines.Add('    $ccWrapExitCode = $LASTEXITCODE')
+  $lines.Add('  }')
   $lines.Add('}')
-  $lines.Add('exit 0')
+  $lines.Add('finally {')
+  $lines.Add('  foreach ($ccWrapEnvName in $ccWrapEnvNames) {')
+  $lines.Add('    if ($null -eq $ccWrapPreviousEnv[$ccWrapEnvName]) {')
+  $lines.Add('      Remove-Item -LiteralPath "Env:$ccWrapEnvName" -ErrorAction SilentlyContinue')
+  $lines.Add('    }')
+  $lines.Add('    else {')
+  $lines.Add('      Set-Item -LiteralPath "Env:$ccWrapEnvName" -Value $ccWrapPreviousEnv[$ccWrapEnvName]')
+  $lines.Add('    }')
+  $lines.Add('  }')
+  $lines.Add('}')
+  $lines.Add('exit $ccWrapExitCode')
 
   return ($lines -join "`n") + "`n"
 }

@@ -11,20 +11,50 @@ if ([string]::IsNullOrEmpty($env:BASIC_API_KEY)) {
   exit 1
 }
 
-# Set provider configuration
-$env:ANTHROPIC_BASE_URL = 'https://api.example.test/v1'
-$env:ANTHROPIC_AUTH_TOKEN = $env:BASIC_API_KEY
-$env:ANTHROPIC_MODEL = 'basic-model'
-$env:ANTHROPIC_REASONING_MODEL = 'basic-model'
-$env:ANTHROPIC_DEFAULT_OPUS_MODEL = 'basic-model'
-$env:ANTHROPIC_DEFAULT_SONNET_MODEL = 'basic-model'
-$env:ANTHROPIC_DEFAULT_HAIKU_MODEL = 'basic-model'
-$env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1'
-$env:CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1'
-$env:CLAUDE_CONFIG_DIR = $HOME + '/.config/claude-basic'
-
-& claude @args
-if ($LASTEXITCODE -is [int]) {
-  exit $LASTEXITCODE
+$ccWrapEnvNames = @(
+  'ANTHROPIC_BASE_URL'
+  'ANTHROPIC_AUTH_TOKEN'
+  'ANTHROPIC_MODEL'
+  'ANTHROPIC_REASONING_MODEL'
+  'ANTHROPIC_DEFAULT_OPUS_MODEL'
+  'ANTHROPIC_DEFAULT_SONNET_MODEL'
+  'ANTHROPIC_DEFAULT_HAIKU_MODEL'
+  'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'
+  'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS'
+  'CLAUDE_CONFIG_DIR'
+)
+$ccWrapPreviousEnv = @{}
+foreach ($ccWrapEnvName in $ccWrapEnvNames) {
+  $ccWrapPreviousEnv[$ccWrapEnvName] = [Environment]::GetEnvironmentVariable($ccWrapEnvName, 'Process')
 }
-exit 0
+$ccWrapExitCode = 0
+
+try {
+  # Set provider configuration
+  $env:ANTHROPIC_BASE_URL = 'https://api.example.test/v1'
+  $env:ANTHROPIC_AUTH_TOKEN = $env:BASIC_API_KEY
+  $env:ANTHROPIC_MODEL = 'basic-model'
+  $env:ANTHROPIC_REASONING_MODEL = 'basic-model'
+  $env:ANTHROPIC_DEFAULT_OPUS_MODEL = 'basic-model'
+  $env:ANTHROPIC_DEFAULT_SONNET_MODEL = 'basic-model'
+  $env:ANTHROPIC_DEFAULT_HAIKU_MODEL = 'basic-model'
+  $env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1'
+  $env:CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1'
+  $env:CLAUDE_CONFIG_DIR = $HOME + '/.config/claude-basic'
+
+  & claude @args
+  if ($LASTEXITCODE -is [int]) {
+    $ccWrapExitCode = $LASTEXITCODE
+  }
+}
+finally {
+  foreach ($ccWrapEnvName in $ccWrapEnvNames) {
+    if ($null -eq $ccWrapPreviousEnv[$ccWrapEnvName]) {
+      Remove-Item -LiteralPath "Env:$ccWrapEnvName" -ErrorAction SilentlyContinue
+    }
+    else {
+      Set-Item -LiteralPath "Env:$ccWrapEnvName" -Value $ccWrapPreviousEnv[$ccWrapEnvName]
+    }
+  }
+}
+exit $ccWrapExitCode

@@ -322,6 +322,77 @@ Write-Host custom
   }
 }) -and $testsPassed
 
+$testsPassed = (Run-Test -Name 'generated wrapper restores process environment after claude exits' -Action {
+  $workspace = New-TestWorkspace
+  $envNames = @(
+    'PATH',
+    'BASIC_API_KEY',
+    'ANTHROPIC_BASE_URL',
+    'ANTHROPIC_AUTH_TOKEN',
+    'ANTHROPIC_MODEL',
+    'ANTHROPIC_REASONING_MODEL',
+    'ANTHROPIC_DEFAULT_OPUS_MODEL',
+    'ANTHROPIC_DEFAULT_SONNET_MODEL',
+    'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+    'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC',
+    'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS',
+    'CLAUDE_CONFIG_DIR'
+  )
+  $previousEnv = @{}
+
+  foreach ($envName in $envNames) {
+    $previousEnv[$envName] = [Environment]::GetEnvironmentVariable($envName, 'Process')
+  }
+
+  try {
+    $config = Prepare-Config -FixtureName 'complete-single.json' -Workdir $workspace.Workdir -OutputDir $workspace.OutputDir
+    $result = Invoke-CCWrap -Arguments @('deploy', '--config', $config)
+    Assert-Equal -Expected '0' -Actual ([string]$result.ExitCode) -Label 'deploy exit code'
+
+    Write-Utf8NoBomFile -Path (Join-Path $workspace.Workdir 'claude.ps1') -Content @'
+if ($env:ANTHROPIC_BASE_URL -ne 'https://api.example.test/v1') { exit 41 }
+if ($env:ANTHROPIC_AUTH_TOKEN -ne 'secret-key') { exit 42 }
+if ($env:ANTHROPIC_MODEL -ne 'basic-model') { exit 43 }
+if ($env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC -ne '1') { exit 44 }
+exit 23
+'@
+
+    Set-Item -LiteralPath Env:PATH -Value ($workspace.Workdir + [IO.Path]::PathSeparator + $previousEnv['PATH'])
+    Set-Item -LiteralPath Env:BASIC_API_KEY -Value 'secret-key'
+    Set-Item -LiteralPath Env:ANTHROPIC_BASE_URL -Value 'original-base'
+    Set-Item -LiteralPath Env:ANTHROPIC_MODEL -Value 'original-model'
+    Remove-Item -LiteralPath Env:ANTHROPIC_AUTH_TOKEN -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath Env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue
+
+    & (Join-Path $workspace.OutputDir 'basic-code.ps1')
+    Assert-Equal -Expected '23' -Actual ([string]$LASTEXITCODE) -Label 'wrapper exit code'
+    Assert-Equal -Expected 'original-base' -Actual ([Environment]::GetEnvironmentVariable('ANTHROPIC_BASE_URL', 'Process')) -Label 'ANTHROPIC_BASE_URL restore'
+    Assert-Equal -Expected 'original-model' -Actual ([Environment]::GetEnvironmentVariable('ANTHROPIC_MODEL', 'Process')) -Label 'ANTHROPIC_MODEL restore'
+
+    if ($null -ne [Environment]::GetEnvironmentVariable('ANTHROPIC_AUTH_TOKEN', 'Process')) {
+      throw 'ANTHROPIC_AUTH_TOKEN was not removed after wrapper exit'
+    }
+    if ($null -ne [Environment]::GetEnvironmentVariable('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC', 'Process')) {
+      throw 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC was not removed after wrapper exit'
+    }
+    if ($null -ne [Environment]::GetEnvironmentVariable('CLAUDE_CONFIG_DIR', 'Process')) {
+      throw 'CLAUDE_CONFIG_DIR was not removed after wrapper exit'
+    }
+  }
+  finally {
+    foreach ($envName in $envNames) {
+      if ($null -eq $previousEnv[$envName]) {
+        Remove-Item -LiteralPath "Env:$envName" -ErrorAction SilentlyContinue
+      }
+      else {
+        Set-Item -LiteralPath "Env:$envName" -Value $previousEnv[$envName]
+      }
+    }
+    Remove-Item -LiteralPath $workspace.Workdir -Recurse -Force
+  }
+}) -and $testsPassed
+
 $testsPassed = (Run-Test -Name 'deploy rejects env values that use command substitution' -Action {
   $workspace = New-TestWorkspace
   try {
